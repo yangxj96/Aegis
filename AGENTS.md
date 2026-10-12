@@ -20,6 +20,7 @@
 - 修改前查看相关源码和最近的 `AGENTS.md`；编辑文件使用 `apply_patch`，保留无关改动。搜索优先用 `rg`。
 - 涉及 Android 代码时，按改动范围运行 Debug 构建、相关单元测试和 lint；网络备份还需验证断网、认证失败、Host Key 变化、上传中断与全新设备恢复。不能运行的检查说明原因。
 - CodeGraph 项目索引位于本地 `.codegraph/`。涉及调用关系或改动影响时可先用 CodeGraph MCP 或 `codegraph explore`、`codegraph impact` 查找，再直接阅读源码核对；索引过期时运行 `codegraph sync`。
+- 为兼容不允许创建符号链接的 Windows 环境，`androidTest` 的 `VaultEntries.java`、两个 Aegis JSON 夹具及 `app/src/main/assets/LICENSE` 是普通文件副本；合并上游后核对它们与 `app/src/test` 中的原件及仓库根目录的 `LICENSE` 一致。
 
 ## 文档与本地文件
 

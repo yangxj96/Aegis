@@ -16,8 +16,9 @@ def getGitHash = { -> return getCmdOutput(["git", "rev-parse", "--short", "HEAD"
 def getGitBranch = { -> return getCmdOutput(["git", "rev-parse", "--abbrev-ref", "HEAD"]) }
 
 def packageName = "com.beemdevelopment.aegis"
-def fileProviderAuthority = "${packageName}.fileprovider"
-def fileProviderAuthorityDebug = "${packageName}.debug.fileprovider"
+def forkApplicationId = "com.devops00.aegis"
+def fileProviderAuthority = "${forkApplicationId}.fileprovider"
+def fileProviderAuthorityDebug = "${forkApplicationId}.debug.fileprovider"
 
 android {
     compileSdk 36
@@ -25,7 +26,7 @@ android {
     namespace packageName
 
     defaultConfig {
-        applicationId "${packageName}"
+        applicationId forkApplicationId
         minSdkVersion 23
         targetSdkVersion 36
         versionCode 82
@@ -71,7 +72,7 @@ android {
         debug {
             applicationIdSuffix ".debug"
             manifestPlaceholders = [
-                title: "AegisDev",
+                title: "Aegis Fork Dev",
                 iconName: "ic_launcher_debug",
                 fileProviderAuthority: "${fileProviderAuthorityDebug}"
             ]
@@ -80,7 +81,7 @@ android {
         }
         release {
             manifestPlaceholders = [
-                title: "Aegis",
+                title: "Aegis Fork",
                 iconName: "ic_launcher",
                 fileProviderAuthority: "${fileProviderAuthority}"
             ]
