@@ -41,3 +41,10 @@ captures/
 *.jks
 crowdin.properties
 .crowdin/config.yml
+
+# Superpowers work files: only its README.md may be tracked
+/docs/superpowers/*
+!/docs/superpowers/README.md
+
+# Local browser snapshots and debugging output
+/.temp/
