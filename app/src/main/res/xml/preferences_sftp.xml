@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="@string/sftp_title">
+    <EditTextPreference
+        android:key="pref_sftp_host"
+        android:title="@string/sftp_host" />
+    <EditTextPreference
+        android:key="pref_sftp_port"
+        android:defaultValue="22"
+        android:title="@string/sftp_port" />
+    <EditTextPreference
+        android:key="pref_sftp_username"
+        android:title="@string/sftp_username" />
+    <EditTextPreference
+        android:key="pref_sftp_directory"
+        android:defaultValue="/aegis"
+        android:title="@string/sftp_directory" />
+    <ListPreference
+        android:key="pref_sftp_auth_type"
+        android:defaultValue="PASSWORD"
+        android:entries="@array/sftp_auth_entries"
+        android:entryValues="@array/sftp_auth_values"
+        android:title="@string/sftp_auth_type" />
+    <Preference
+        android:key="sftp_password"
+        android:persistent="false"
+        android:title="@string/sftp_set_password" />
+    <Preference
+        android:key="sftp_private_key"
+        android:persistent="false"
+        android:title="@string/sftp_import_private_key" />
+    <Preference
+        android:key="sftp_clear_credentials"
+        android:persistent="false"
+        android:title="@string/sftp_clear_credentials" />
+    <Preference
+        android:key="sftp_pin"
+        android:persistent="false"
+        android:selectable="false"
+        android:title="@string/sftp_pinned_key" />
+    <Preference
+        android:key="sftp_reset_pin"
+        android:persistent="false"
+        android:title="@string/sftp_reset_pin" />
+    <Preference
+        android:key="sftp_test"
+        android:persistent="false"
+        android:title="@string/sftp_test_connection" />
+    <Preference
+        android:key="sftp_test_result"
+        android:persistent="false"
+        android:selectable="false"
+        android:title="@string/sftp_test_result" />
+</PreferenceScreen>

@@ -35,6 +35,59 @@
     <string name="pref_section_audit_log_title">Audit log</string>
     <string name="pref_section_audit_log_summary">Find a list of all reported important events that happened within the app.</string>
     <string name="pref_section_backups_title">Backups</string>
+    <string name="sftp_title">SFTP</string>
+    <string name="sftp_settings_title">SFTP connection</string>
+    <string name="sftp_settings_summary">Configure a server and test the connection. Vault upload will be added in a later stage.</string>
+    <string name="sftp_host">Server host</string>
+    <string name="sftp_port">Port</string>
+    <string name="sftp_username">Username</string>
+    <string name="sftp_directory">Backup directory</string>
+    <string name="sftp_auth_type">Authentication</string>
+    <string name="sftp_auth_password">Password</string>
+    <string name="sftp_auth_private_key">OpenSSH private key</string>
+    <string name="sftp_set_password">Set SFTP password</string>
+    <string name="sftp_import_private_key">Import OpenSSH private key</string>
+    <string name="sftp_key_passphrase">Private key passphrase (leave empty if none)</string>
+    <string name="sftp_clear_credentials">Remove saved credentials</string>
+    <string name="sftp_pinned_key">Trusted server key</string>
+    <string name="sftp_reset_pin">Reset trusted server key</string>
+    <string name="sftp_test_connection">Test connection</string>
+    <string name="sftp_test_result">Connection result</string>
+    <string name="sftp_not_configured">Complete the server settings first.</string>
+    <string name="sftp_no_password_credentials">No SFTP password is saved. Tap “Set SFTP password” and save it before testing.</string>
+    <string name="sftp_no_key_credentials">No SFTP private key is saved. Tap “Import OpenSSH private key” before testing.</string>
+    <string name="sftp_credentials_checking">Checking saved credentials…</string>
+    <string name="sftp_credentials_present">Saved on this device</string>
+    <string name="sftp_credentials_absent">Not saved on this device</string>
+    <string name="sftp_credentials_unavailable">Saved credentials cannot be read</string>
+    <string name="sftp_no_pin">No server key trusted yet</string>
+    <string name="sftp_testing">Connecting…</string>
+    <string name="sftp_connected">SFTP connection succeeded.</string>
+    <string name="sftp_host_key_unknown">Verify this server key fingerprint through a trusted channel before accepting it:\n%1$s\n%2$s</string>
+    <string name="sftp_host_key_changed">The server key has changed. Connection was refused. Verify the new key independently, then reset the trusted key if the change is expected.\n%1$s\n%2$s</string>
+    <string name="sftp_trust_key">Trust key</string>
+    <string name="sftp_invalid_private_key">The private key could not be loaded.</string>
+    <string name="sftp_auth_failed">Authentication failed. Check the password, private key and passphrase.</string>
+    <string name="sftp_timeout">The connection timed out.</string>
+    <string name="sftp_network_error">Could not connect to the server.</string>
+    <string name="sftp_subsystem_unavailable">The server did not open the SFTP subsystem.</string>
+    <string name="sftp_storage_error">Could not access protected SFTP settings. Save credentials again if the device key was lost.</string>
+    <string name="sftp_key_too_large">The private key is too large (maximum 128 KiB).</string>
+    <string name="sftp_credentials_saved">SFTP credentials saved.</string>
+    <string name="sftp_credentials_removed">SFTP credentials removed.</string>
+    <string name="sftp_pin_removed">Trusted server key removed.</string>
+    <string name="sftp_confirm_reset_pin">Remove the trusted key? The next connection will require independent fingerprint verification.</string>
+    <string name="sftp_confirm_clear_credentials">Remove the saved SFTP password or private key?</string>
+    <string name="sftp_invalid_setting">Invalid value.</string>
+    <string name="sftp_invalid_credential">The password or private key passphrase is empty or too long.</string>
+    <string-array name="sftp_auth_entries">
+        <item>@string/sftp_auth_password</item>
+        <item>@string/sftp_auth_private_key</item>
+    </string-array>
+    <string-array name="sftp_auth_values">
+        <item>PASSWORD</item>
+        <item>PRIVATE_KEY</item>
+    </string-array>
     <string name="pref_section_backups_summary">Set up automatic backups to a location of your choosing or enable participation in Android\'s cloud backup system.</string>
     <string name="pref_section_icon_packs">Icon packs</string>
     <string name="pref_section_icon_packs_summary">Manage and import icon packs</string>

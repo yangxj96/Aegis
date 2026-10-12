@@ -60,4 +60,10 @@
             android:selectable="false"
             android:summary="@string/pref_android_backups_hint" />
     </PreferenceCategory>
+    <PreferenceCategory android:title="@string/sftp_title">
+        <Preference
+            android:fragment="com.beemdevelopment.aegis.ui.fragments.preferences.SftpPreferencesFragment"
+            android:title="@string/sftp_settings_title"
+            android:summary="@string/sftp_settings_summary" />
+    </PreferenceCategory>
 </PreferenceScreen>
