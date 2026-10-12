@@ -48,3 +48,6 @@ crowdin.properties
 
 # Local browser snapshots and debugging output
 /.temp/
+
+# Local CodeGraph index
+/.codegraph/
