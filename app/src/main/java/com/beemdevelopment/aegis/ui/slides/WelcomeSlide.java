@@ -16,6 +16,7 @@ import com.beemdevelopment.aegis.importers.AegisImporter;
 import com.beemdevelopment.aegis.importers.DatabaseImporter;
 import com.beemdevelopment.aegis.importers.DatabaseImporterException;
 import com.beemdevelopment.aegis.ui.dialogs.Dialogs;
+import com.beemdevelopment.aegis.ui.SftpRestoreActivity;
 import com.beemdevelopment.aegis.ui.intro.SlideFragment;
 import com.beemdevelopment.aegis.ui.tasks.ImportFileTask;
 import com.beemdevelopment.aegis.vault.VaultFileCredentials;
@@ -37,6 +38,14 @@ public class WelcomeSlide extends SlideFragment {
                 }
             });
 
+    private final ActivityResultLauncher<Intent> sftpRestoreLauncher =
+            registerForActivityResult(new StartActivityForResult(), result -> {
+                if (result.getResultCode() == android.app.Activity.RESULT_OK) {
+                    _imported = true;
+                    goToNextSlide();
+                }
+            });
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_welcome_slide, container, false);
@@ -45,6 +54,8 @@ public class WelcomeSlide extends SlideFragment {
             intent.setType("*/*");
             vaultImportResultLauncher.launch(intent);
         });
+        view.findViewById(R.id.btnSftpRestore).setOnClickListener(v ->
+                sftpRestoreLauncher.launch(new Intent(requireContext(), SftpRestoreActivity.class)));
         return view;
     }
 

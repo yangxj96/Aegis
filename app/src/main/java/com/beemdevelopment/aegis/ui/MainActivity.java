@@ -1314,7 +1314,7 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
 
     @Override
     public void onEntryDrop(VaultEntry entry) {
-        saveVault();
+        saveAndBackupVault();
     }
 
     @Override

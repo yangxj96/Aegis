@@ -1,6 +1,7 @@
 package com.beemdevelopment.aegis.backup.sftp;
 
 import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.HostKey;
 import com.jcraft.jsch.HostKeyRepository;
 import com.jcraft.jsch.JSch;
@@ -48,20 +49,30 @@ public final class SftpConnectionTester {
     }
 
     public static Result test(SftpConfig config, SftpCredentials credentials, SftpHostKey pinned) {
+        try (Connection ignored = open(config, credentials, pinned)) {
+            return new Result(Status.CONNECTED, null);
+        } catch (ConnectionFailure e) {
+            return new Result(e.status, e.candidate);
+        }
+    }
+
+    static Connection open(SftpConfig config, SftpCredentials credentials, SftpHostKey pinned)
+            throws ConnectionFailure {
         if (credentials.getType() != config.getAuthType()) {
-            return new Result(Status.AUTHENTICATION_FAILED, null);
+            throw new ConnectionFailure(Status.AUTHENTICATION_FAILED, null);
         }
         JSch jsch = new JSch();
         PinRepository repository = new PinRepository(config.getHost(), config.getPort(), pinned);
         jsch.setHostKeyRepository(repository);
         Session session = null;
         Channel channel = null;
+        boolean handedOff = false;
         try {
             if (config.getAuthType() == SftpAuthType.PRIVATE_KEY) {
                 try {
                     jsch.addIdentity("aegis-sftp", credentials.getSecret(), null, credentials.getPassphrase());
                 } catch (JSchException e) {
-                    return new Result(Status.INVALID_PRIVATE_KEY, null);
+                    throw new ConnectionFailure(Status.INVALID_PRIVATE_KEY, null);
                 }
             }
             session = jsch.getSession(config.getUsername(), config.getHost(), config.getPort());
@@ -80,29 +91,73 @@ public final class SftpConnectionTester {
                 session.connect(TIMEOUT_MS);
             } catch (JSchException e) {
                 if (repository.getCandidate() != null) {
-                    return new Result(pinned == null ? Status.HOST_KEY_UNKNOWN : Status.HOST_KEY_CHANGED,
+                    throw new ConnectionFailure(pinned == null ? Status.HOST_KEY_UNKNOWN : Status.HOST_KEY_CHANGED,
                             repository.getCandidate());
                 }
-                return new Result(classify(e), null);
+                throw new ConnectionFailure(classify(e), null);
             }
             channel = session.openChannel("sftp");
             channel.connect(TIMEOUT_MS);
-            return new Result(Status.CONNECTED, null);
+            if (!(channel instanceof ChannelSftp)) {
+                throw new ConnectionFailure(Status.SFTP_UNAVAILABLE, null);
+            }
+            Connection connection = new Connection(jsch, session, (ChannelSftp) channel);
+            handedOff = true;
+            return connection;
         } catch (JSchException e) {
-            return new Result(session != null && session.isConnected()
+            throw new ConnectionFailure(session != null && session.isConnected()
                     ? Status.SFTP_UNAVAILABLE : classify(e), null);
         } finally {
-            if (channel != null) {
-                channel.disconnect();
+            if (!handedOff) {
+                if (channel != null) {
+                    channel.disconnect();
+                }
+                if (session != null) {
+                    session.disconnect();
+                }
+                try {
+                    jsch.removeAllIdentity();
+                } catch (JSchException ignored) {
+                    // The JSch instance is discarded after this operation.
+                }
             }
-            if (session != null) {
-                session.disconnect();
-            }
+        }
+    }
+
+    static final class Connection implements AutoCloseable {
+        private final JSch jsch;
+        private final Session session;
+        private final ChannelSftp channel;
+
+        Connection(JSch jsch, Session session, ChannelSftp channel) {
+            this.jsch = jsch;
+            this.session = session;
+            this.channel = channel;
+        }
+
+        ChannelSftp getChannel() {
+            return channel;
+        }
+
+        @Override
+        public void close() {
+            channel.disconnect();
+            session.disconnect();
             try {
                 jsch.removeAllIdentity();
             } catch (JSchException ignored) {
-                // The JSch instance is discarded after this test.
+                // All SSH objects are discarded after this operation.
             }
+        }
+    }
+
+    static final class ConnectionFailure extends Exception {
+        final Status status;
+        final SftpHostKey candidate;
+
+        ConnectionFailure(Status status, SftpHostKey candidate) {
+            this.status = status;
+            this.candidate = candidate;
         }
     }
 

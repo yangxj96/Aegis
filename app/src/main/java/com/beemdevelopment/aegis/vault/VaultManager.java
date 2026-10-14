@@ -10,9 +10,11 @@ import android.net.Uri;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.util.AtomicFile;
 import androidx.fragment.app.Fragment;
 
 import com.beemdevelopment.aegis.BackupsVersioningStrategy;
+import com.beemdevelopment.aegis.backup.sftp.SftpAutoBackupScheduler;
 import com.beemdevelopment.aegis.Preferences;
 import com.beemdevelopment.aegis.R;
 import com.beemdevelopment.aegis.crypto.KeyStoreHandle;
@@ -22,10 +24,14 @@ import com.beemdevelopment.aegis.services.NotificationService;
 import com.beemdevelopment.aegis.ui.dialogs.Dialogs;
 
 import java.io.File;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class VaultManager {
@@ -64,6 +70,7 @@ public class VaultManager {
         VaultRepository repo = new VaultRepository(_context, new Vault(), creds);
         repo.save();
         _repo = repo;
+        scheduleSftpBackup();
 
         if (getVault().isEncryptionEnabled()) {
             startNotificationService();
@@ -96,11 +103,59 @@ public class VaultManager {
         return loadFrom(vaultFile, null);
     }
 
+    /** Replaces the complete vault after its caller has prepared a recoverable old copy. */
+    public void replaceFrom(@NonNull VaultFile vaultFile, @NonNull VaultFileCredentials creds)
+            throws VaultRepositoryException {
+        VaultRepository replacement = VaultRepository.fromFile(_context, vaultFile, creds);
+        AtomicFile atomicFile = new AtomicFile(new File(_context.getFilesDir(), VaultRepository.FILENAME));
+        byte[] previous;
+        try {
+            previous = atomicFile.getBaseFile().exists() ? atomicFile.readFully() : null;
+        } catch (IOException e) {
+            throw new VaultRepositoryException(e);
+        }
+        byte[] next = vaultFile.toBytes();
+        try {
+            VaultRepository.writeToFile(_context, new ByteArrayInputStream(next));
+            byte[] written = readRawVaultBytes(atomicFile.getBaseFile());
+            if (!Arrays.equals(next, written)) {
+                throw new IOException("Vault replacement verification failed");
+            }
+            VaultRepository.fromFile(_context, VaultRepository.readVaultFile(_context), creds);
+        } catch (IOException | VaultRepositoryException | RuntimeException e) {
+            try {
+                if (previous == null) {
+                    VaultRepository.deleteFile(_context);
+                } else {
+                    VaultRepository.writeToFile(_context, new ByteArrayInputStream(previous));
+                }
+            } catch (IOException rollbackError) {
+                e.addSuppressed(rollbackError);
+            }
+            throw new VaultRepositoryException(e);
+        }
+        _repo = replacement;
+        startNotificationService();
+        scheduleSftpBackup();
+    }
+
+    private static byte[] readRawVaultBytes(File file) throws IOException {
+        try (FileInputStream input = new FileInputStream(file);
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[8192];
+            int count;
+            while ((count = input.read(buffer)) != -1) {
+                output.write(buffer, 0, count);
+            }
+            return output.toByteArray();
+        }
+    }
+
     /**
      * Locks the vault and the app.
      * @param userInitiated whether or not the user initiated the lock in MainActivity.
      */
-    public void lock(boolean userInitiated) {
+    public synchronized void lock(boolean userInitiated) {
         _repo = null;
 
         for (LockListener listener : _lockListeners) {
@@ -119,6 +174,7 @@ public class VaultManager {
     public void disableEncryption() throws VaultRepositoryException {
         getVault().setCredentials(null);
         save();
+        scheduleSftpBackup();
 
         // remove any keys that are stored in the KeyStore
         try {
@@ -138,6 +194,7 @@ public class VaultManager {
 
     public void saveAndBackup() throws VaultRepositoryException {
         save();
+        scheduleSftpBackup();
 
         boolean backedUp = false;
         if (getVault().isEncryptionEnabled()) {
@@ -158,6 +215,14 @@ public class VaultManager {
 
         if (!backedUp) {
             _prefs.setIsBackupReminderNeeded(true);
+        }
+    }
+
+    private void scheduleSftpBackup() {
+        try {
+            SftpAutoBackupScheduler.onVaultSaved(_context);
+        } catch (RuntimeException ignored) {
+            // The vault has already been saved. Its next startup will reconcile pending work.
         }
     }
 

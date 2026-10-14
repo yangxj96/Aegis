@@ -51,4 +51,36 @@
         android:persistent="false"
         android:selectable="false"
         android:title="@string/sftp_test_result" />
+    <ListPreference
+        android:key="pref_sftp_retention"
+        android:defaultValue="10"
+        android:entries="@array/sftp_retention_entries"
+        android:entryValues="@array/sftp_retention_values"
+        android:title="@string/sftp_retention" />
+    <SwitchPreferenceCompat
+        android:key="pref_sftp_auto_upload"
+        android:defaultValue="false"
+        android:title="@string/sftp_auto_upload"
+        android:summary="@string/sftp_auto_upload_hint" />
+    <Preference
+        android:key="sftp_auto_status"
+        android:persistent="false"
+        android:title="@string/sftp_auto_status" />
+    <Preference
+        android:key="sftp_upload"
+        android:persistent="false"
+        android:title="@string/sftp_upload" />
+    <Preference
+        android:key="sftp_upload_status"
+        android:persistent="false"
+        android:title="@string/sftp_upload_status" />
+    <Preference
+        android:key="sftp_versions"
+        android:persistent="false"
+        android:title="@string/sftp_versions" />
+    <Preference
+        android:key="sftp_restore_rollback"
+        android:persistent="false"
+        android:title="@string/sftp_restore_rollback"
+        android:summary="@string/sftp_restore_rollback_hint" />
 </PreferenceScreen>

@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.InputType;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -17,8 +18,15 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.preference.EditTextPreference;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
+import androidx.preference.SwitchPreferenceCompat;
+import androidx.work.WorkManager;
 
 import com.beemdevelopment.aegis.R;
+import com.beemdevelopment.aegis.backup.sftp.SftpBackupException;
+import com.beemdevelopment.aegis.backup.sftp.SftpBackupManager;
+import com.beemdevelopment.aegis.backup.sftp.SftpBackupStorage;
+import com.beemdevelopment.aegis.backup.sftp.SftpAutoBackupScheduler;
+import com.beemdevelopment.aegis.backup.sftp.SftpAutoBackupState;
 import com.beemdevelopment.aegis.backup.sftp.SftpAuthType;
 import com.beemdevelopment.aegis.backup.sftp.SftpConfig;
 import com.beemdevelopment.aegis.backup.sftp.SftpConnectionTester;
@@ -26,13 +34,19 @@ import com.beemdevelopment.aegis.backup.sftp.SftpCredentialStore;
 import com.beemdevelopment.aegis.backup.sftp.SftpCredentials;
 import com.beemdevelopment.aegis.backup.sftp.SftpHostKey;
 import com.beemdevelopment.aegis.backup.sftp.SftpSettingsRepository;
+import com.beemdevelopment.aegis.backup.sftp.SftpRestoreManager;
+import com.beemdevelopment.aegis.ui.SftpRestoreActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.text.DateFormat;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -46,6 +60,13 @@ public class SftpPreferencesFragment extends PreferencesFragment {
     private Preference _resultPreference;
     private Preference _passwordPreference;
     private Preference _privateKeyPreference;
+    private Preference _uploadPreference;
+    private Preference _uploadStatusPreference;
+    private Preference _autoStatusPreference;
+    private Preference _versionsPreference;
+    private Preference _rollbackPreference;
+    private File _downloadedRestore;
+    private boolean _restoreBusy;
     private int _testGeneration;
     private int _credentialStatusGeneration;
 
@@ -77,6 +98,7 @@ public class SftpPreferencesFragment extends PreferencesFragment {
                     .putString(SftpSettingsRepository.KEY_AUTH_TYPE, (String) value).apply();
             updateAuthVisibility();
             refreshCredentialStatus();
+            notifyAutoSettingsChanged();
             return true;
         });
 
@@ -104,6 +126,7 @@ public class SftpPreferencesFragment extends PreferencesFragment {
                             _credentials.clear();
                             setResult(R.string.sftp_credentials_removed);
                             refreshCredentialStatus();
+                            notifyAutoSettingsChanged();
                         } catch (GeneralSecurityException | IOException e) {
                             setResult(R.string.sftp_storage_error);
                         }
@@ -122,6 +145,7 @@ public class SftpPreferencesFragment extends PreferencesFragment {
                         _settings.clearPin();
                         updatePinSummary();
                         setResult(R.string.sftp_pin_removed);
+                        notifyAutoSettingsChanged();
                     })
                     .setNegativeButton(android.R.string.cancel, null).create());
             return true;
@@ -131,9 +155,76 @@ public class SftpPreferencesFragment extends PreferencesFragment {
             runTest();
             return true;
         });
+        ListPreference retention = requirePreference(SftpSettingsRepository.KEY_RETENTION);
+        retention.setSummaryProvider(ListPreference.SimpleSummaryProvider.getInstance());
+        retention.setOnPreferenceChangeListener((preference, value) -> {
+            _mainHandler.post(this::notifyAutoSettingsChanged);
+            return true;
+        });
+        SwitchPreferenceCompat autoUpload = requirePreference(SftpAutoBackupState.KEY_ENABLED);
+        autoUpload.setOnPreferenceChangeListener((preference, value) -> {
+            SftpAutoBackupScheduler.setEnabled(requireContext().getApplicationContext(), (boolean) value);
+            _mainHandler.post(this::updateAutoStatus);
+            return true;
+        });
+        _autoStatusPreference = requirePreference("sftp_auto_status");
+        _autoStatusPreference.setOnPreferenceClickListener(preference -> {
+            showAutoDetails();
+            return true;
+        });
+        _uploadPreference = requirePreference("sftp_upload");
+        _uploadPreference.setOnPreferenceClickListener(preference -> {
+            startUpload();
+            return true;
+        });
+        _uploadStatusPreference = requirePreference("sftp_upload_status");
+        _uploadStatusPreference.setOnPreferenceClickListener(preference -> {
+            showUploadDetails();
+            return true;
+        });
+        _versionsPreference = requirePreference("sftp_versions");
+        _versionsPreference.setSummary(R.string.sftp_versions_read_only);
+        _versionsPreference.setOnPreferenceClickListener(preference -> {
+            loadVersions();
+            return true;
+        });
+        _rollbackPreference = requirePreference("sftp_restore_rollback");
+        _rollbackPreference.setOnPreferenceClickListener(preference -> {
+            if (!_restoreBusy) {
+                promptRestorePassword(null, getString(R.string.sftp_restore_rollback), true);
+            }
+            return true;
+        });
+        boolean introductory = requireActivity() instanceof SftpRestoreActivity;
+        retention.setVisible(!introductory);
+        autoUpload.setVisible(!introductory);
+        _autoStatusPreference.setVisible(!introductory);
+        _uploadPreference.setVisible(!introductory);
+        _uploadStatusPreference.setVisible(!introductory);
+        updateRollbackVisibility();
         updateAuthVisibility();
         updatePinSummary();
         refreshCredentialStatus();
+        updateUploadStatus(SftpBackupManager.getStatus(requireContext()));
+        updateAutoStatus();
+        updateRollbackVisibility();
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (!(requireActivity() instanceof SftpRestoreActivity)) {
+            WorkManager.getInstance(requireContext())
+                    .getWorkInfosForUniqueWorkLiveData(SftpAutoBackupScheduler.WORK_NAME)
+                    .observe(getViewLifecycleOwner(), ignored -> updateAutoStatus());
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateUploadStatus(SftpBackupManager.getStatus(requireContext()));
+        updateAutoStatus();
     }
 
     @Override
@@ -141,6 +232,10 @@ public class SftpPreferencesFragment extends PreferencesFragment {
         ++_testGeneration;
         ++_credentialStatusGeneration;
         _executor.shutdownNow();
+        if (_downloadedRestore != null) {
+            _downloadedRestore.delete();
+            _downloadedRestore = null;
+        }
         super.onDestroy();
     }
 
@@ -173,6 +268,7 @@ public class SftpPreferencesFragment extends PreferencesFragment {
             }
             ++_testGeneration;
             _mainHandler.post(this::updatePinSummary);
+            _mainHandler.post(this::notifyAutoSettingsChanged);
             return true;
         });
     }
@@ -246,6 +342,7 @@ public class SftpPreferencesFragment extends PreferencesFragment {
                         ++_credentialStatusGeneration;
                         updateCredentialSummaries(SftpAuthType.PASSWORD);
                         setResult(R.string.sftp_credentials_saved);
+                        notifyAutoSettingsChanged();
                         Toast.makeText(requireContext(), R.string.sftp_credentials_saved, Toast.LENGTH_SHORT).show();
                     } catch (IllegalArgumentException e) {
                         showCredentialSaveError(_passwordPreference, R.string.sftp_invalid_credential);
@@ -317,6 +414,7 @@ public class SftpPreferencesFragment extends PreferencesFragment {
                         ++_credentialStatusGeneration;
                         updateCredentialSummaries(SftpAuthType.PRIVATE_KEY);
                         setResult(R.string.sftp_credentials_saved);
+                        notifyAutoSettingsChanged();
                         Toast.makeText(requireContext(), R.string.sftp_credentials_saved, Toast.LENGTH_SHORT).show();
                     } catch (IllegalArgumentException e) {
                         showCredentialSaveError(_privateKeyPreference, R.string.sftp_invalid_credential);
@@ -398,6 +496,7 @@ public class SftpPreferencesFragment extends PreferencesFragment {
                             try {
                                 _settings.pin(config, candidate);
                                 updatePinSummary();
+                                notifyAutoSettingsChanged();
                                 runTest();
                             } catch (IOException e) {
                                 setResult(R.string.sftp_storage_error);
@@ -425,6 +524,375 @@ public class SftpPreferencesFragment extends PreferencesFragment {
             case NETWORK_ERROR:
                 setResult(R.string.sftp_network_error);
                 break;
+        }
+    }
+
+    private void startUpload() {
+        if (!_vaultManager.isVaultLoaded()) {
+            Toast.makeText(requireContext(), R.string.sftp_error_local_storage, Toast.LENGTH_LONG).show();
+            return;
+        }
+        boolean started = SftpBackupManager.startUpload(requireContext(), status -> {
+            if (isAdded()) {
+                updateUploadStatus(SftpBackupManager.getStatus(requireContext()));
+            }
+        });
+        if (started) {
+            updateUploadStatus(SftpBackupManager.getStatus(requireContext()));
+        } else {
+            Toast.makeText(requireContext(), R.string.sftp_upload_busy, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void notifyAutoSettingsChanged() {
+        if (!isAdded() || requireActivity() instanceof SftpRestoreActivity) {
+            return;
+        }
+        SftpAutoBackupScheduler.onSettingsChanged(requireContext().getApplicationContext());
+        updateAutoStatus();
+    }
+
+    private void updateAutoStatus() {
+        if (_autoStatusPreference == null || !isAdded()) {
+            return;
+        }
+        SftpAutoBackupState.Status status = SftpAutoBackupState.getStatus(requireContext());
+        String time = status.getTime() > 0
+                ? DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                        .format(new Date(status.getTime())) : "";
+        switch (status.getPhase()) {
+            case DISABLED:
+                _autoStatusPreference.setSummary(R.string.sftp_auto_disabled);
+                break;
+            case NEVER:
+                _autoStatusPreference.setSummary(R.string.sftp_auto_never);
+                break;
+            case PENDING:
+                _autoStatusPreference.setSummary(R.string.sftp_auto_pending);
+                break;
+            case RUNNING:
+                _autoStatusPreference.setSummary(R.string.sftp_auto_running);
+                break;
+            case RETRYING:
+                _autoStatusPreference.setSummary(R.string.sftp_auto_retrying);
+                break;
+            case BLOCKED:
+                _autoStatusPreference.setSummary(R.string.sftp_auto_blocked);
+                break;
+            case SUCCESS:
+                _autoStatusPreference.setSummary(getString(R.string.sftp_auto_success, time));
+                break;
+            case CLEANUP_WARNING:
+                _autoStatusPreference.setSummary(getString(R.string.sftp_auto_cleanup_warning, time));
+                break;
+        }
+        _autoStatusPreference.setSelectable(status.getReason() != null || status.getFilename() != null);
+    }
+
+    private void showAutoDetails() {
+        SftpAutoBackupState.Status status = SftpAutoBackupState.getStatus(requireContext());
+        String message;
+        if (status.getReason() != null) {
+            message = getString(errorMessage(status.getReason()));
+        } else if (status.getFilename() != null) {
+            message = getString(R.string.sftp_upload_file, status.getFilename());
+        } else {
+            return;
+        }
+        showDialog(new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.sftp_auto_status)
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, null).create());
+    }
+
+    private void updateUploadStatus(SftpBackupManager.Status status) {
+        _uploadPreference.setEnabled(!SftpBackupManager.isUploadActive());
+        String time = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                .format(new Date(status.getTime()));
+        switch (status.getState()) {
+            case NEVER:
+                _uploadStatusPreference.setSummary(R.string.sftp_upload_never);
+                break;
+            case RUNNING:
+                _uploadStatusPreference.setSummary(R.string.sftp_upload_running);
+                break;
+            case SUCCESS:
+                _uploadStatusPreference.setSummary(getString(R.string.sftp_upload_success, time));
+                break;
+            case SUCCESS_CLEANUP_FAILED:
+                _uploadStatusPreference.setSummary(getString(R.string.sftp_upload_cleanup_warning, time));
+                break;
+            case FAILED:
+                _uploadStatusPreference.setSummary(getString(R.string.sftp_upload_failed, time));
+                break;
+            case INTERRUPTED:
+                _uploadStatusPreference.setSummary(R.string.sftp_upload_interrupted);
+                break;
+        }
+        _uploadStatusPreference.setSelectable(status.getState() != SftpBackupManager.State.NEVER
+                && status.getState() != SftpBackupManager.State.RUNNING);
+    }
+
+    private void showUploadDetails() {
+        SftpBackupManager.Status status = SftpBackupManager.getStatus(requireContext());
+        String message;
+        if (status.getState() == SftpBackupManager.State.FAILED) {
+            message = getString(errorMessage(status.getReason()));
+        } else if (status.getState() == SftpBackupManager.State.INTERRUPTED) {
+            message = getString(R.string.sftp_upload_interrupted);
+        } else if (status.getFilename() != null) {
+            message = getString(R.string.sftp_upload_file, status.getFilename());
+            if (status.getState() == SftpBackupManager.State.SUCCESS_CLEANUP_FAILED) {
+                message += "\n\n" + getString(R.string.sftp_upload_cleanup_warning,
+                        DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                                .format(new Date(status.getTime())));
+            }
+        } else {
+            return;
+        }
+        showDialog(new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.sftp_upload_status)
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, null).create());
+    }
+
+    private void loadVersions() {
+        _versionsPreference.setSummary(R.string.sftp_versions_loading);
+        int generation = _testGeneration;
+        android.content.Context context = requireContext().getApplicationContext();
+        _executor.execute(() -> {
+            List<SftpBackupStorage.Version> versions = null;
+            SftpBackupException.Reason reason = null;
+            try {
+                versions = SftpBackupManager.listVersions(context);
+            } catch (SftpBackupException e) {
+                reason = e.getReason();
+            } catch (RuntimeException e) {
+                reason = SftpBackupException.Reason.LOCAL_STORAGE;
+            }
+            List<SftpBackupStorage.Version> result = versions;
+            SftpBackupException.Reason failure = reason;
+            _mainHandler.post(() -> {
+                if (!isAdded() || generation != _testGeneration) {
+                    return;
+                }
+                if (failure != null) {
+                    _versionsPreference.setSummary(errorMessage(failure));
+                    return;
+                }
+                _versionsPreference.setSummary(getString(R.string.sftp_versions_count, result.size()));
+                if (result.isEmpty()) {
+                    showDialog(new MaterialAlertDialogBuilder(requireContext())
+                            .setTitle(R.string.sftp_versions)
+                            .setMessage(R.string.sftp_versions_empty)
+                            .setPositiveButton(android.R.string.ok, null).create());
+                } else {
+                    int count = result.size();
+                    CharSequence[] labels = new CharSequence[count];
+                    for (int i = 0; i < count; i++) {
+                        SftpBackupStorage.Version version = result.get(i);
+                        labels[i] = version.getName() + "  (" + version.getSize() + " B)";
+                    }
+                    showDialog(new MaterialAlertDialogBuilder(requireContext())
+                            .setTitle(R.string.sftp_versions)
+                            .setItems(labels, (dialog, which) -> startDownload(result.get(which).getName()))
+                            .setNegativeButton(android.R.string.cancel, null).create());
+                }
+            });
+        });
+    }
+
+    private void startDownload(String filename) {
+        if (_restoreBusy) {
+            return;
+        }
+        _restoreBusy = true;
+        _versionsPreference.setEnabled(false);
+        _versionsPreference.setSummary(R.string.sftp_restore_downloading);
+        android.content.Context context = requireContext().getApplicationContext();
+        _executor.execute(() -> {
+            File file = null;
+            SftpBackupException.Reason reason = null;
+            try {
+                file = SftpBackupManager.downloadVersion(context, filename);
+            } catch (SftpBackupException e) {
+                reason = e.getReason();
+            } catch (RuntimeException e) {
+                reason = SftpBackupException.Reason.LOCAL_STORAGE;
+            }
+            File downloaded = file;
+            SftpBackupException.Reason failure = reason;
+            _mainHandler.post(() -> {
+                if (!isAdded()) {
+                    if (downloaded != null) {
+                        downloaded.delete();
+                    }
+                    return;
+                }
+                if (failure != null) {
+                    finishRestore(errorMessage(failure));
+                    return;
+                }
+                _downloadedRestore = downloaded;
+                promptRestorePassword(downloaded, filename, false);
+            });
+        });
+    }
+
+    private void promptRestorePassword(File file, String filename, boolean rollback) {
+        if (rollback) {
+            _restoreBusy = true;
+            _versionsPreference.setEnabled(false);
+        }
+        EditText input = passwordInput();
+        boolean[] submitted = {false};
+        showDialog(new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(rollback ? R.string.sftp_restore_previous_password
+                        : R.string.sftp_restore_backup_password)
+                .setView(input)
+                .setPositiveButton(R.string.sftp_restore_verify, (dialog, which) -> {
+                    submitted[0] = true;
+                    char[] password = new char[input.length()];
+                    input.getText().getChars(0, input.length(), password, 0);
+                    input.getText().clear();
+                    validateRestore(file, filename, rollback, password);
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .setOnDismissListener(dialog -> {
+                    input.getText().clear();
+                    if (!submitted[0]) {
+                        finishRestore(R.string.sftp_versions_read_only);
+                    }
+                }).create());
+    }
+
+    private void validateRestore(File file, String filename, boolean rollback, char[] password) {
+        _versionsPreference.setSummary(R.string.sftp_restore_validating);
+        android.content.Context context = requireContext().getApplicationContext();
+        _executor.execute(() -> {
+            SftpRestoreManager.PreparedRestore prepared = null;
+            SftpBackupException.Reason reason = null;
+            try {
+                prepared = rollback ? SftpRestoreManager.prepareRollback(context, password)
+                        : SftpRestoreManager.prepare(context, file, password);
+            } catch (SftpBackupException e) {
+                reason = e.getReason();
+            } catch (RuntimeException e) {
+                reason = SftpBackupException.Reason.REMOTE_FILE_INVALID;
+            } finally {
+                Arrays.fill(password, '\0');
+                if (!rollback) {
+                    file.delete();
+                }
+            }
+            SftpRestoreManager.PreparedRestore valid = prepared;
+            SftpBackupException.Reason failure = reason;
+            _mainHandler.post(() -> {
+                _downloadedRestore = null;
+                if (!isAdded()) {
+                    return;
+                }
+                if (failure != null) {
+                    finishRestore(errorMessage(failure));
+                    return;
+                }
+                showRestoreConfirmation(filename, valid, rollback);
+            });
+        });
+    }
+
+    private void showRestoreConfirmation(String filename, SftpRestoreManager.PreparedRestore prepared,
+                                         boolean rollback) {
+        boolean introductory = requireActivity() instanceof SftpRestoreActivity;
+        int message = introductory ? R.string.sftp_restore_confirm_new
+                : rollback ? R.string.sftp_restore_confirm_rollback : R.string.sftp_restore_confirm_replace;
+        showDialog(new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.sftp_restore_confirm_title)
+                .setMessage(getString(message, filename, prepared.getEntryCount()))
+                .setPositiveButton(R.string.sftp_restore_confirm_action,
+                        (dialog, which) -> commitRestore(prepared, introductory, rollback))
+                .setNegativeButton(android.R.string.cancel, (dialog, which) -> finishRestore(R.string.sftp_versions_read_only))
+                .setCancelable(false).create());
+    }
+
+    private void commitRestore(SftpRestoreManager.PreparedRestore prepared, boolean introductory,
+                               boolean rollback) {
+        _versionsPreference.setSummary(R.string.sftp_restore_replacing);
+        android.content.Context context = requireContext().getApplicationContext();
+        _executor.execute(() -> {
+            SftpBackupException.Reason reason = null;
+            try {
+                SftpRestoreManager.commit(context, _vaultManager, prepared);
+                if (introductory) {
+                    new com.beemdevelopment.aegis.Preferences(context).setIntroDone(true);
+                }
+            } catch (SftpBackupException e) {
+                reason = e.getReason();
+            } catch (RuntimeException e) {
+                reason = SftpBackupException.Reason.LOCAL_STORAGE;
+            }
+            SftpBackupException.Reason failure = reason;
+            _mainHandler.post(() -> {
+                if (!isAdded()) {
+                    return;
+                }
+                if (failure != null) {
+                    finishRestore(errorMessage(failure));
+                    return;
+                }
+                finishRestore(R.string.sftp_restore_success);
+                if (introductory) {
+                    ((SftpRestoreActivity) requireActivity()).finishWithRestore();
+                } else {
+                    showDialog(new MaterialAlertDialogBuilder(requireContext())
+                            .setTitle(R.string.sftp_restore_success)
+                            .setMessage(rollback ? R.string.sftp_restore_rollback_success_hint
+                                    : R.string.sftp_restore_unlock_hint)
+                            .setPositiveButton(android.R.string.ok, (dialog, which) -> requireActivity().finish())
+                            .setCancelable(false).create());
+                }
+            });
+        });
+    }
+
+    private void finishRestore(int summary) {
+        _restoreBusy = false;
+        _versionsPreference.setEnabled(true);
+        _versionsPreference.setSummary(summary);
+        updateRollbackVisibility();
+    }
+
+    private void updateRollbackVisibility() {
+        if (_rollbackPreference != null) {
+            _rollbackPreference.setVisible(_vaultManager.isVaultLoaded()
+                    && SftpRestoreManager.hasRollback(requireContext()));
+        }
+    }
+
+    private int errorMessage(SftpBackupException.Reason reason) {
+        if (reason == null) {
+            return R.string.sftp_error_local_storage;
+        }
+        switch (reason) {
+            case NOT_CONFIGURED: return R.string.sftp_error_not_configured;
+            case CREDENTIALS_MISSING: return R.string.sftp_error_credentials_missing;
+            case PIN_MISSING: return R.string.sftp_error_pin_missing;
+            case HOST_KEY_CHANGED: return R.string.sftp_error_host_key_changed;
+            case AUTHENTICATION_FAILED: return R.string.sftp_error_authentication_failed;
+            case CONNECTION_FAILED: return R.string.sftp_error_connection_failed;
+            case REMOTE_DIRECTORY: return R.string.sftp_error_remote_directory;
+            case REMOTE_WRITE: return R.string.sftp_error_remote_write;
+            case REMOTE_READ: return R.string.sftp_error_remote_read;
+            case REMOTE_FILE_INVALID: return R.string.sftp_error_remote_file_invalid;
+            case REMOTE_FILE_TOO_LARGE: return R.string.sftp_error_remote_file_too_large;
+            case BACKUP_PASSWORD_INCORRECT: return R.string.sftp_error_backup_password_incorrect;
+            case ROLLBACK_UNAVAILABLE: return R.string.sftp_error_rollback_unavailable;
+            case SIZE_MISMATCH: return R.string.sftp_error_size_mismatch;
+            case VAULT_UNENCRYPTED: return R.string.sftp_error_vault_unencrypted;
+            case PASSWORD_SLOT_MISSING: return R.string.sftp_error_password_slot_missing;
+            case UPLOAD_BUSY: return R.string.sftp_upload_busy;
+            case CANCELLED: return R.string.sftp_error_cancelled;
+            default: return R.string.sftp_error_local_storage;
         }
     }
 

@@ -78,6 +78,10 @@
             android:name=".ui.IntroActivity"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".ui.SftpRestoreActivity"
+            android:exported="false"
+            android:label="@string/sftp_restore_from_server" />
+        <activity
             android:name=".ui.AuthActivity" />
         <activity
             android:name=".ui.PreferencesActivity"

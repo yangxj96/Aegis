@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.UUID;
 
 public final class SftpSettingsRepository {
     public static final String KEY_HOST = "pref_sftp_host";
@@ -22,14 +23,17 @@ public final class SftpSettingsRepository {
     public static final String KEY_USERNAME = "pref_sftp_username";
     public static final String KEY_DIRECTORY = "pref_sftp_directory";
     public static final String KEY_AUTH_TYPE = "pref_sftp_auth_type";
+    public static final String KEY_RETENTION = "pref_sftp_retention";
 
     private static final int PIN_FORMAT_VERSION = 1;
     private final SharedPreferences _preferences;
     private final AtomicFile _pinFile;
+    private final AtomicFile _deviceFile;
 
     public SftpSettingsRepository(Context context) {
         _preferences = PreferenceManager.getDefaultSharedPreferences(context);
         _pinFile = new AtomicFile(new File(context.getNoBackupFilesDir(), "sftp_host_key_pin"));
+        _deviceFile = new AtomicFile(new File(context.getNoBackupFilesDir(), "sftp_device_id"));
     }
 
     public SftpConfig getConfig() {
@@ -106,5 +110,43 @@ public final class SftpSettingsRepository {
 
     public void clearPin() {
         _pinFile.delete();
+    }
+
+    public int getRetentionCount() {
+        int count;
+        try {
+            count = Integer.parseInt(_preferences.getString(KEY_RETENTION, "10"));
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid SFTP retention count", e);
+        }
+        if (count < 1 || count > 100) {
+            throw new IllegalArgumentException("Invalid SFTP retention count");
+        }
+        return count;
+    }
+
+    public synchronized String getDeviceId() throws IOException {
+        try {
+            byte[] bytes = _deviceFile.readFully();
+            String id = new String(bytes, StandardCharsets.US_ASCII);
+            if (!id.matches("[0-9a-f]{32}")) {
+                throw new IOException("Invalid SFTP device ID");
+            }
+            return id;
+        } catch (FileNotFoundException ignored) {
+            String id = UUID.randomUUID().toString().replace("-", "");
+            FileOutputStream stream = null;
+            try {
+                stream = _deviceFile.startWrite();
+                stream.write(id.getBytes(StandardCharsets.US_ASCII));
+                _deviceFile.finishWrite(stream);
+            } catch (IOException e) {
+                if (stream != null) {
+                    _deviceFile.failWrite(stream);
+                }
+                throw e;
+            }
+            return id;
+        }
     }
 }

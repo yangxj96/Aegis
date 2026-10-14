@@ -37,7 +37,7 @@
     <string name="pref_section_backups_title">Backups</string>
     <string name="sftp_title">SFTP</string>
     <string name="sftp_settings_title">SFTP connection</string>
-    <string name="sftp_settings_summary">Configure a server and test the connection. Vault upload will be added in a later stage.</string>
+    <string name="sftp_settings_summary">Configure the server, test the connection and upload an encrypted vault backup.</string>
     <string name="sftp_host">Server host</string>
     <string name="sftp_port">Port</string>
     <string name="sftp_username">Username</string>
@@ -80,6 +80,74 @@
     <string name="sftp_confirm_clear_credentials">Remove the saved SFTP password or private key?</string>
     <string name="sftp_invalid_setting">Invalid value.</string>
     <string name="sftp_invalid_credential">The password or private key passphrase is empty or too long.</string>
+    <string name="sftp_retention">Versions to keep on this device</string>
+    <string name="sftp_auto_upload">Automatically upload encrypted vault</string>
+    <string name="sftp_auto_upload_hint">After a vault change, upload when a network connection is available. Off by default.</string>
+    <string name="sftp_auto_status">Automatic SFTP backup</string>
+    <string name="sftp_auto_disabled">Off</string>
+    <string name="sftp_auto_never">Waiting for the first backup</string>
+    <string name="sftp_auto_pending">Backup queued; waiting for a network connection</string>
+    <string name="sftp_auto_running">Uploading encrypted backup…</string>
+    <string name="sftp_auto_retrying">Upload failed; will retry automatically. Tap for details.</string>
+    <string name="sftp_auto_blocked">Upload needs attention. Tap for details.</string>
+    <string name="sftp_auto_success">Latest change uploaded: %1$s</string>
+    <string name="sftp_auto_cleanup_warning">Latest change uploaded: %1$s. Older versions could not be removed.</string>
+    <string name="sftp_upload">Upload encrypted vault now</string>
+    <string name="sftp_upload_status">SFTP backup status</string>
+    <string name="sftp_versions">View remote backup versions</string>
+    <string name="sftp_upload_never">No manual SFTP backup yet</string>
+    <string name="sftp_upload_running">Uploading encrypted backup…</string>
+    <string name="sftp_upload_success">Upload completed: %1$s</string>
+    <string name="sftp_upload_cleanup_warning">Upload completed at %1$s, but older versions could not be removed.</string>
+    <string name="sftp_upload_failed">Upload failed: %1$s. Tap for details.</string>
+    <string name="sftp_upload_interrupted">The previous upload was interrupted. Check remote versions before retrying.</string>
+    <string name="sftp_upload_busy">An SFTP upload is already running.</string>
+    <string name="sftp_upload_file">Remote file: %1$s</string>
+    <string name="sftp_error_not_configured">Complete the SFTP connection settings.</string>
+    <string name="sftp_error_credentials_missing">Save credentials for the selected authentication method.</string>
+    <string name="sftp_error_pin_missing">Test the connection and verify the server key first.</string>
+    <string name="sftp_error_host_key_changed">The server key changed. The connection was refused; verify the fingerprint independently.</string>
+    <string name="sftp_error_authentication_failed">SFTP authentication failed. Check the saved credentials.</string>
+    <string name="sftp_error_connection_failed">Could not connect to the SFTP server.</string>
+    <string name="sftp_error_remote_directory">The remote backup directory is missing or cannot be listed.</string>
+    <string name="sftp_error_remote_write">The server refused the upload or rename. Check directory permissions and available space.</string>
+    <string name="sftp_error_size_mismatch">The uploaded file size did not match the encrypted snapshot; no complete version was published.</string>
+    <string name="sftp_error_local_storage">Could not read the vault or protected SFTP settings.</string>
+    <string name="sftp_error_cancelled">The upload was interrupted. The pending backup will retry.</string>
+    <string name="sftp_error_vault_unencrypted">The vault is not encrypted. Set a vault password before uploading.</string>
+    <string name="sftp_error_password_slot_missing">The vault has no exportable password slot. Set a recoverable backup password before uploading.</string>
+    <string name="sftp_versions_loading">Loading remote versions…</string>
+    <string name="sftp_versions_count">%1$d remote versions</string>
+    <string name="sftp_versions_empty">No completed Aegis SFTP backups were found.</string>
+    <string name="sftp_versions_read_only">Select a version to download and restore.</string>
+    <string name="sftp_restore_from_server">Restore from SFTP server</string>
+    <string name="sftp_restore_rollback">Restore previous local vault</string>
+    <string name="sftp_restore_rollback_hint">Undo the last full vault replacement with its previous password.</string>
+    <string name="sftp_restore_downloading">Downloading encrypted backup…</string>
+    <string name="sftp_restore_backup_password">Backup password</string>
+    <string name="sftp_restore_previous_password">Previous vault password</string>
+    <string name="sftp_restore_verify">Verify</string>
+    <string name="sftp_restore_validating">Checking password and complete vault…</string>
+    <string name="sftp_restore_confirm_title">Restore complete vault?</string>
+    <string name="sftp_restore_confirm_new">Restore %1$s with %2$d entries? You will unlock it with the backup password. You can set a new unlock password later.</string>
+    <string name="sftp_restore_confirm_replace">Replace the current vault with %1$s (%2$d entries)? An encrypted copy of the current vault will be kept locally for rollback. The backup password will unlock the restored vault.</string>
+    <string name="sftp_restore_confirm_rollback">Restore %1$s (%2$d entries)? The current encrypted vault will be saved as the new rollback copy. Use the previous vault password to unlock.</string>
+    <string name="sftp_restore_confirm_action">Restore vault</string>
+    <string name="sftp_restore_replacing">Replacing vault and verifying rollback…</string>
+    <string name="sftp_restore_success">Vault restored</string>
+    <string name="sftp_restore_unlock_hint">The backup password now unlocks this vault. Set a new regular unlock password in Security settings if desired. The previous encrypted vault is available from SFTP settings for rollback.</string>
+    <string name="sftp_restore_rollback_success_hint">The previous vault is restored. Use its password to unlock. The vault you just replaced is now available as the local rollback copy.</string>
+    <string name="sftp_error_remote_read">Could not download the remote backup.</string>
+    <string name="sftp_error_remote_file_invalid">This is not a valid encrypted Aegis vault backup.</string>
+    <string name="sftp_error_remote_file_too_large">The remote backup exceeds the 32 MiB restore limit.</string>
+    <string name="sftp_error_backup_password_incorrect">The backup password is incorrect.</string>
+    <string name="sftp_error_rollback_unavailable">Could not verify and save a recoverable copy of the current vault. Nothing was replaced. Ensure the current vault has a password slot.</string>
+    <string-array name="sftp_retention_entries">
+        <item>1</item><item>5</item><item>10</item><item>20</item><item>50</item>
+    </string-array>
+    <string-array name="sftp_retention_values">
+        <item>1</item><item>5</item><item>10</item><item>20</item><item>50</item>
+    </string-array>
     <string-array name="sftp_auth_entries">
         <item>@string/sftp_auth_password</item>
         <item>@string/sftp_auth_private_key</item>

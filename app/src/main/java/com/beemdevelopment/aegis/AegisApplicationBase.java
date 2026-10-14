@@ -18,6 +18,9 @@ import androidx.lifecycle.LifecycleEventObserver;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ProcessLifecycleOwner;
 
+import com.beemdevelopment.aegis.backup.sftp.SftpAutoBackupScheduler;
+import com.beemdevelopment.aegis.backup.sftp.SftpBackupManager;
+
 import com.beemdevelopment.aegis.receivers.VaultLockReceiver;
 import com.beemdevelopment.aegis.ui.MainActivity;
 import com.beemdevelopment.aegis.util.IOUtils;
@@ -55,6 +58,13 @@ public abstract class AegisApplicationBase extends Application {
 
         // clear the cache directory on startup, to make sure no temporary vault export files remain
         IOUtils.clearDirectory(getCacheDir(), false);
+        SftpBackupManager.cleanupInterruptedSnapshots(this);
+
+        try {
+            SftpAutoBackupScheduler.reconcile(this);
+        } catch (RuntimeException ignored) {
+            // Startup and offline OTP access must not depend on backup scheduling.
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
             initAppShortcuts();

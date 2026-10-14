@@ -104,6 +104,12 @@ public class IntroActivity extends IntroBaseActivity {
                 return;
             }
         } else {
+            if (_vaultManager.isVaultLoaded()) {
+                _prefs.setIntroDone(true);
+                setResult(RESULT_OK);
+                finish();
+                return;
+            }
             VaultFile vaultFile;
             try {
                 vaultFile = VaultRepository.readVaultFile(this);
