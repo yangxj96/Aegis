@@ -27,6 +27,7 @@ import com.google.android.material.color.MaterialColors;
 public class AboutActivity extends AegisActivity {
 
     private static String GITHUB = "https://github.com/beemdevelopment/Aegis";
+    private static String GITHUB_FORK = "https://github.com/yangxj96/Aegis";
     private static String WEBSITE_ALEXANDER = "https://alexbakker.me";
     private static String GITHUB_MICHAEL = "https://github.com/michaelschattgen";
 
@@ -73,6 +74,9 @@ public class AboutActivity extends AegisActivity {
 
         View btnGithub = findViewById(R.id.btn_github);
         btnGithub.setOnClickListener(v -> openUrl(GITHUB));
+
+        View btnForkMaintainer = findViewById(R.id.btn_fork_maintainer);
+        btnForkMaintainer.setOnClickListener(v -> openUrl(GITHUB_FORK));
 
         View btnAlexander = findViewById(R.id.btn_alexander);
         btnAlexander.setOnClickListener(v -> openUrl(WEBSITE_ALEXANDER));

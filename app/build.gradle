@@ -72,7 +72,7 @@ android {
         debug {
             applicationIdSuffix ".debug"
             manifestPlaceholders = [
-                title: "Aegis Fork Dev",
+                title: "AegisD (Debug)",
                 iconName: "ic_launcher_debug",
                 fileProviderAuthority: "${fileProviderAuthorityDebug}"
             ]
@@ -81,7 +81,7 @@ android {
         }
         release {
             manifestPlaceholders = [
-                title: "Aegis Fork",
+                title: "AegisD",
                 iconName: "ic_launcher",
                 fileProviderAuthority: "${fileProviderAuthority}"
             ]

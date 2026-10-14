@@ -82,6 +82,10 @@
             android:exported="false"
             android:label="@string/sftp_restore_from_server" />
         <activity
+            android:name=".ui.SftpVersionsActivity"
+            android:exported="false"
+            android:label="@string/sftp_versions" />
+        <activity
             android:name=".ui.AuthActivity" />
         <activity
             android:name=".ui.PreferencesActivity"

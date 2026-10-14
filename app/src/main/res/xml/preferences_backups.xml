@@ -64,6 +64,7 @@
         <Preference
             android:fragment="com.beemdevelopment.aegis.ui.fragments.preferences.SftpPreferencesFragment"
             android:title="@string/sftp_settings_title"
-            android:summary="@string/sftp_settings_summary" />
+            android:summary="@string/sftp_settings_summary"
+            app:icon="@drawable/ic_outline_cloud_upload_24" />
     </PreferenceCategory>
 </PreferenceScreen>

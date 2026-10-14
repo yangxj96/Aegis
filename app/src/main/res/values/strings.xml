@@ -1,7 +1,10 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name" translatable="false">Aegis</string>
     <string name="app_name_full" translatable="false">Aegis Authenticator</string>
+    <string name="fork_app_name_full" translatable="false">AegisD</string>
     <string name="org_name_full" translatable="false">Beem Development</string>
+    <string name="fork_maintainer_name" translatable="false">DevOps00</string>
+    <string name="fork_maintainer_summary">Unofficial fork · GitHub: @yangxj96</string>
     <string name="action_settings">Settings</string>
     <string name="action_about">About</string>
     <string name="action_delete">Delete</string>
@@ -38,16 +41,22 @@
     <string name="sftp_title">SFTP</string>
     <string name="sftp_settings_title">SFTP connection</string>
     <string name="sftp_settings_summary">Configure the server, test the connection and upload an encrypted vault backup.</string>
+    <string name="sftp_category_connection">Connection</string>
+    <string name="sftp_category_credentials">Credentials</string>
+    <string name="sftp_category_server_trust">Server trust</string>
+    <string name="sftp_category_backup">Backup</string>
     <string name="sftp_host">Server host</string>
     <string name="sftp_port">Port</string>
     <string name="sftp_username">Username</string>
     <string name="sftp_directory">Backup directory</string>
     <string name="sftp_auth_type">Authentication</string>
     <string name="sftp_auth_password">Password</string>
+    <string name="sftp_password_hint">SFTP server password</string>
     <string name="sftp_auth_private_key">OpenSSH private key</string>
     <string name="sftp_set_password">Set SFTP password</string>
     <string name="sftp_import_private_key">Import OpenSSH private key</string>
     <string name="sftp_key_passphrase">Private key passphrase (leave empty if none)</string>
+    <string name="sftp_passphrase_hint">Private key passphrase</string>
     <string name="sftp_clear_credentials">Remove saved credentials</string>
     <string name="sftp_pinned_key">Trusted server key</string>
     <string name="sftp_reset_pin">Reset trusted server key</string>
@@ -118,8 +127,16 @@
     <string name="sftp_error_password_slot_missing">The vault has no exportable password slot. Set a recoverable backup password before uploading.</string>
     <string name="sftp_versions_loading">Loading remote versions…</string>
     <string name="sftp_versions_count">%1$d remote versions</string>
+    <string name="sftp_versions_choose_hint">Versions are ordered newest first. Select one to review its details before downloading.</string>
     <string name="sftp_versions_empty">No completed Aegis SFTP backups were found.</string>
+    <string name="sftp_versions_retry">Try again</string>
+    <string name="sftp_versions_refresh">Refresh versions</string>
     <string name="sftp_versions_read_only">Select a version to download and restore.</string>
+    <string name="sftp_version_size">Encrypted backup · %1$s</string>
+    <string name="sftp_version_time_unavailable">Date unavailable</string>
+    <string name="sftp_version_download_title">Download this backup?</string>
+    <string name="sftp_version_download_confirm">Backup time: %1$s\nSize: %2$s\n\nThe encrypted backup will be downloaded and you will be asked for its password. After it is verified, you will review a separate confirmation before the vault is restored.</string>
+    <string name="sftp_version_download_action">Download and continue</string>
     <string name="sftp_restore_from_server">Restore from SFTP server</string>
     <string name="sftp_restore_rollback">Restore previous local vault</string>
     <string name="sftp_restore_rollback_hint">Undo the last full vault replacement with its previous password.</string>
@@ -562,11 +579,12 @@
     <string name="changelog">Changelog</string>
     <string name="whats_new">What\'s new</string>
     <string name="github" translatable="false">GitHub</string>
-    <string name="github_description">Source code, issues and information</string>
+    <string name="github_description">Official Aegis repository, issues and project information</string>
     <string name="license">License</string>
     <string name="license_description">Aegis Authenticator is licensed under GPLv3</string>
     <string name="third_party_licenses">Third-party licenses</string>
     <string name="third_party_licenses_description">Licenses of the third-party libraries Aegis uses</string>
+    <string name="about_original_project_credit">Original Aegis project by Beem Development</string>
     <string name="author_alex" translatable="false">Alexander Bakker</string>
     <string name="country_netherlands">Netherlands</string>
     <string name="author_michael" translatable="false">Michael Schättgen</string>

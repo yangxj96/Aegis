@@ -1,86 +1,122 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:title="@string/sftp_title">
-    <EditTextPreference
-        android:key="pref_sftp_host"
-        android:title="@string/sftp_host" />
-    <EditTextPreference
-        android:key="pref_sftp_port"
-        android:defaultValue="22"
-        android:title="@string/sftp_port" />
-    <EditTextPreference
-        android:key="pref_sftp_username"
-        android:title="@string/sftp_username" />
-    <EditTextPreference
-        android:key="pref_sftp_directory"
-        android:defaultValue="/aegis"
-        android:title="@string/sftp_directory" />
-    <ListPreference
-        android:key="pref_sftp_auth_type"
-        android:defaultValue="PASSWORD"
-        android:entries="@array/sftp_auth_entries"
-        android:entryValues="@array/sftp_auth_values"
-        android:title="@string/sftp_auth_type" />
-    <Preference
-        android:key="sftp_password"
-        android:persistent="false"
-        android:title="@string/sftp_set_password" />
-    <Preference
-        android:key="sftp_private_key"
-        android:persistent="false"
-        android:title="@string/sftp_import_private_key" />
-    <Preference
-        android:key="sftp_clear_credentials"
-        android:persistent="false"
-        android:title="@string/sftp_clear_credentials" />
-    <Preference
-        android:key="sftp_pin"
-        android:persistent="false"
-        android:selectable="false"
-        android:title="@string/sftp_pinned_key" />
-    <Preference
-        android:key="sftp_reset_pin"
-        android:persistent="false"
-        android:title="@string/sftp_reset_pin" />
-    <Preference
-        android:key="sftp_test"
-        android:persistent="false"
-        android:title="@string/sftp_test_connection" />
-    <Preference
-        android:key="sftp_test_result"
-        android:persistent="false"
-        android:selectable="false"
-        android:title="@string/sftp_test_result" />
-    <ListPreference
-        android:key="pref_sftp_retention"
-        android:defaultValue="10"
-        android:entries="@array/sftp_retention_entries"
-        android:entryValues="@array/sftp_retention_values"
-        android:title="@string/sftp_retention" />
-    <SwitchPreferenceCompat
-        android:key="pref_sftp_auto_upload"
-        android:defaultValue="false"
-        android:title="@string/sftp_auto_upload"
-        android:summary="@string/sftp_auto_upload_hint" />
-    <Preference
-        android:key="sftp_auto_status"
-        android:persistent="false"
-        android:title="@string/sftp_auto_status" />
-    <Preference
-        android:key="sftp_upload"
-        android:persistent="false"
-        android:title="@string/sftp_upload" />
-    <Preference
-        android:key="sftp_upload_status"
-        android:persistent="false"
-        android:title="@string/sftp_upload_status" />
-    <Preference
-        android:key="sftp_versions"
-        android:persistent="false"
-        android:title="@string/sftp_versions" />
-    <Preference
-        android:key="sftp_restore_rollback"
-        android:persistent="false"
-        android:title="@string/sftp_restore_rollback"
-        android:summary="@string/sftp_restore_rollback_hint" />
+    <PreferenceCategory
+        android:title="@string/sftp_category_connection"
+        app:iconSpaceReserved="false">
+        <EditTextPreference
+            android:key="pref_sftp_host"
+            android:title="@string/sftp_host"
+            app:iconSpaceReserved="false" />
+        <EditTextPreference
+            android:key="pref_sftp_port"
+            android:defaultValue="22"
+            android:title="@string/sftp_port"
+            app:iconSpaceReserved="false" />
+        <EditTextPreference
+            android:key="pref_sftp_username"
+            android:title="@string/sftp_username"
+            app:iconSpaceReserved="false" />
+        <EditTextPreference
+            android:key="pref_sftp_directory"
+            android:defaultValue="/aegis"
+            android:title="@string/sftp_directory"
+            app:iconSpaceReserved="false" />
+        <ListPreference
+            android:key="pref_sftp_auth_type"
+            android:defaultValue="PASSWORD"
+            android:entries="@array/sftp_auth_entries"
+            android:entryValues="@array/sftp_auth_values"
+            android:title="@string/sftp_auth_type"
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="@string/sftp_category_credentials"
+        app:iconSpaceReserved="false">
+        <Preference
+            android:key="sftp_password"
+            android:persistent="false"
+            android:title="@string/sftp_set_password"
+            app:iconSpaceReserved="false" />
+        <Preference
+            android:key="sftp_private_key"
+            android:persistent="false"
+            android:title="@string/sftp_import_private_key"
+            app:iconSpaceReserved="false" />
+        <Preference
+            android:key="sftp_clear_credentials"
+            android:persistent="false"
+            android:title="@string/sftp_clear_credentials"
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="@string/sftp_category_server_trust"
+        app:iconSpaceReserved="false">
+        <Preference
+            android:key="sftp_pin"
+            android:persistent="false"
+            android:selectable="false"
+            android:title="@string/sftp_pinned_key"
+            app:iconSpaceReserved="false" />
+        <Preference
+            android:key="sftp_reset_pin"
+            android:persistent="false"
+            android:title="@string/sftp_reset_pin"
+            app:iconSpaceReserved="false" />
+        <Preference
+            android:key="sftp_test"
+            android:persistent="false"
+            android:title="@string/sftp_test_connection"
+            app:iconSpaceReserved="false" />
+        <Preference
+            android:key="sftp_test_result"
+            android:persistent="false"
+            android:selectable="false"
+            android:title="@string/sftp_test_result"
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="@string/sftp_category_backup"
+        app:iconSpaceReserved="false">
+        <ListPreference
+            android:key="pref_sftp_retention"
+            android:defaultValue="10"
+            android:entries="@array/sftp_retention_entries"
+            android:entryValues="@array/sftp_retention_values"
+            android:title="@string/sftp_retention"
+            app:iconSpaceReserved="false" />
+        <SwitchPreferenceCompat
+            android:key="pref_sftp_auto_upload"
+            android:defaultValue="false"
+            android:title="@string/sftp_auto_upload"
+            android:summary="@string/sftp_auto_upload_hint"
+            app:iconSpaceReserved="false" />
+        <Preference
+            android:key="sftp_auto_status"
+            android:persistent="false"
+            android:title="@string/sftp_auto_status"
+            app:iconSpaceReserved="false" />
+        <Preference
+            android:key="sftp_upload"
+            android:persistent="false"
+            android:title="@string/sftp_upload"
+            app:iconSpaceReserved="false" />
+        <Preference
+            android:key="sftp_upload_status"
+            android:persistent="false"
+            android:title="@string/sftp_upload_status"
+            app:iconSpaceReserved="false" />
+        <Preference
+            android:key="sftp_versions"
+            android:persistent="false"
+            android:title="@string/sftp_versions"
+            app:iconSpaceReserved="false" />
+        <Preference
+            android:key="sftp_restore_rollback"
+            android:persistent="false"
+            android:title="@string/sftp_restore_rollback"
+            android:summary="@string/sftp_restore_rollback_hint"
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory>
 </PreferenceScreen>
